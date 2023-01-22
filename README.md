@@ -51,7 +51,7 @@ options:
   -s {frequency,saturation,brightness}, --sort {frequency,saturation,brightness}
                         The criteria to sort the colors by. Default = 'frequency'
   -m {max-val,max-sat} [{max-val,max-sat} ...], --mod {max-val,max-sat} [{max-val,max-sat} ...]
-                        The modify the colors properties before sorting.
+                        The modify the colors properties after sorting.
   -v, --verbose         Increase output verbosity.
 ```
 
@@ -69,7 +69,7 @@ Find (20) color clusters from an image, sort them by saturation, pick the top 10
 $ color-extractor image.jpg -n 10 -s saturation -o output.txt
 ```
 
-Find 30 color clusters from an image, maximize their value and saturation, sort by saturation, pick the top one, and write the output to a file in the cache directory:
+Find 30 color clusters from an image, sort by saturation, pick the top one, maximize value and saturation, and write the output to a file in the cache directory:
 
 ```console
 $ color-extractor ~/pictures/wallpapers/image.jpg -c 30 -n 1 -s saturation -m max-val max-sat -o ~/.cache/color
