@@ -8,7 +8,7 @@ setup(
     entry_points = {
         'console_scripts': [
             'color-extractor = color_extractor.__main__:main' ]},
-    python_requires = '>= 3.10.9',
+    python_requires = '>= 3.6',
     install_requires = [
         'codetiming >= 1.4.0',
         'numpy >= 1.24.1',
