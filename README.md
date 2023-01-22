@@ -24,8 +24,9 @@ $ color-extractor [path to image file] [options]
 
 ```console
 $ color-extractor --help
-usage: color-extractor [-h] [-f] [-o [OUTPUT_PATH]] [--format {hex,rgb,hsv}] [--include-hashtag] [-c [NUM_CLUSTERS]]
-                       [-n [NUM_COLORS]] [-s {frequency,saturation,brightness}] [-m {max-val,max-sat} [{max-val,max-sat} ...]] [-v]
+usage: color-extractor [-h] [-f] [-o [OUTPUT_PATH]] [--format {hex,rgb,hsv}] [--include-hashtag] 
+                       [-c [NUM_CLUSTERS]] [-n [NUM_COLORS]] [-s {frequency,saturation,brightness}] 
+                       [-m {max-val,max-sat} [{max-val,max-sat} ...]] [-v]
                        [PATH]
 
 Command-line tool for extracting dominant colors from an image.
