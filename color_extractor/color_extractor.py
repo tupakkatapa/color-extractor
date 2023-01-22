@@ -274,15 +274,19 @@ def main():
             palette = sorted(palette, key = lambda x: x[1])
         elif sort_by == 'brightness':
             palette = sorted(palette, key = lambda x: x[2])
-
+        
         # Loop through the palette, starting at the last color
         output_colors = []
         for i, hsv_color in enumerate(palette[-num_colors:], start=1):
 
+            hsv_list = list(hsv_color)
             if mod:
-                if 'max-sat' in mod: hsv_color[1] = 255
-                if 'max-val' in mod: hsv_color[2] = 255
-            
+                if 'max-sat' in mod:
+                    hsv_list[1] = 255
+                if 'max-val' in mod:
+                    hsv_list[2] = 255
+            hsv_color = tuple(hsv_list)
+
             rgb_color = hsv2rgb(hsv_color)
             hex_color = rgb2hex(rgb_color)
 
