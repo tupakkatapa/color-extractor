@@ -322,10 +322,6 @@ def main():
                     f.write(f'{item}\n')
 
             if args.verbose: print(f'[+] Saved to {output_path}')
-
-        else:
-            print(pytext.format_text(text="[-] Invalid path.", color="red"))
-            exit(0)
         
         if args.verbose: t.stop()
         exit(0)
