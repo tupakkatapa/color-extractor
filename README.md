@@ -72,7 +72,7 @@ $ color-extractor image.jpg -n 10 -s saturation -o output.txt
 Find 30 color clusters from an image, maximize their value and saturation, sort by saturation, pick the top one, and write the output to a file in the cache directory:
 
 ```console
-$ color-extractor ~/pictures/wallapapers/image.jpg -c 30 -n 1 -s saturation -m max-val max-sat -o ~/.cache/color
+$ color-extractor ~/pictures/wallpapers/image.jpg -c 30 -n 1 -s saturation -m max-val max-sat -o ~/.cache/color
 ```
 
 
