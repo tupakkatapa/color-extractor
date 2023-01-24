@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Simple command-line tool for extracting colors from image 
-# by tupakkatapa
+# A command-line tool for extracting dominant colors from an image.
+# https://github.com/tupakkatapa/color-extractor
 
 # General modules
 from signal import signal, SIGINT
@@ -91,7 +91,7 @@ def parse_arguments():
     parser.add_argument(
                         "-m",
                         "--mod",
-                        help    = "The modify the colors properties before sorting.",
+                        help    = "Modify the colors properties before sorting.",
                         type    = str,
                         choices = ['max-val','max-sat'],
                         nargs   = '+',
