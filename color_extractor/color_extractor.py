@@ -75,7 +75,7 @@ def parse_arguments():
     parser.add_argument(
                         "-n",
                         "--number",
-                        help    = "The number of colors to output. Default = 5",
+                        help    =   "The number of colors to output. Default = 5",
                         type    = int,
                         default = 5,
                         nargs   = '?',
@@ -83,10 +83,10 @@ def parse_arguments():
     parser.add_argument(
                         "-s",
                         "--sort",
-                        help    = "The criteria to sort the colors by. Default = 'frequency'",
+                        help    =   "The criteria to sort the colors by. Default = 'frequency'\n(NOTE: the order of the arguments matter when used with --number)",
                         type    = str,
                         default = 'frequency',
-                        choices = ['frequency','saturation', 'brightness'],
+                        choices = ['saturation', 'value', 'brightness', 'chroma'],
                         dest    = "sort_by")
     parser.add_argument(
                         "-m",
@@ -269,15 +269,39 @@ def main():
             print(pytext.format_text(text="[-] Invalid image file.", color="red"))
             exit(0)
 
-        # Sorting
-        if sort_by == 'saturation':
-            palette = sorted(palette, key = lambda x: x[1])
-        elif sort_by == 'brightness':
-            palette = sorted(palette, key = lambda x: x[2])
         
+        # Check if the sort_by argument was passed before the num_colors argument
+        sort_first = (
+            (args.sort_by is not None or '-s' in sys.argv)
+            and (args.num_colors is not None or '-n' in sys.argv)
+            and (
+                ("--sort" in sys.argv and ('--number' in sys.argv) and sys.argv.index("--sort") < sys.argv.index("--number"))
+                or ("-s" in sys.argv and ('-n' in sys.argv) and sys.argv.index('-s') < sys.argv.index('-n'))
+            )
+        ) if args.sort_by is not None or args.num_colors is not None else True
+
+        sort_keys = {   'saturation': lambda x: x[1],
+                        'brightness': lambda x: x[2],
+                        'value'     : lambda x: x[2],
+                        'chroma'    : lambda x: x[1]*x[2]}
+
+        if sort_by != 'frequency':
+            if sort_first:
+                if args.verbose: print("[+] Sorting before limiting the number of colors")
+                # Sort the palette and cut the list
+                palette = sorted(palette, key=sort_keys.get(sort_by))
+                user_palette = palette[-num_colors:]
+            else:
+                if args.verbose: print("[+] Sorting after limiting the number of colors")
+                # Cut the list and sort
+                user_palette = palette[-num_colors:]
+                user_palette = sorted(user_palette, key=sort_keys.get(sort_by))
+        else:
+            user_palette = palette[-num_colors:]
+ 
         # Loop through the palette, starting at the last color
         output_colors = []
-        for i, hsv_color in enumerate(palette[-num_colors:], start=1):
+        for i, hsv_color in enumerate(user_palette, start=1):
 
             hsv_list = list(hsv_color)
             if mod:
