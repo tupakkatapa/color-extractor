@@ -67,13 +67,13 @@ $ color-extractor image.jpg
 2. Find (20) color clusters from an image, pick the top 10, sort them by saturation and write the output to a file:
 
 ```console
-$ color-extractor image.jpg -n 10 -s saturation -o output.txt
+$ color-extractor image.jpg -n 10 -s brightness -o output.txt
 ```
 
-3. Find 30 color clusters from an image, sort them by saturation, pick the top one, maximize value and saturation and write the output to a file in the cache directory:
+3. Find 30 color clusters from an image, sort them by brightness, pick the top one, maximize value and saturation and write the output to a file in the cache directory:
 
 ```console
-$ color-extractor ~/pictures/wallpapers/image.jpg -c 30 -n 1 -s saturation -m max-val max-sat -o ~/.cache/color
+$ color-extractor ~/pictures/wallpapers/image.jpg -c 30 -s saturation -n 1 -m max-val max-sat -o ~/.cache/color
 ```
 
 ## Links
