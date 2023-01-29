@@ -4,7 +4,7 @@
 
 # General modules
 from signal import signal, SIGINT
-import argparse, logging, os, sys
+import argparse, logging, os, sys, time
 from codetiming import Timer
 
 # Colored text
@@ -75,7 +75,7 @@ def parse_arguments():
     parser.add_argument(
                         "-n",
                         "--number",
-                        help    =   "The number of colors to output. Default = 5",
+                        help    = "The number of colors to output. Default = 5",
                         type    = int,
                         default = 5,
                         nargs   = '?',
@@ -83,18 +83,24 @@ def parse_arguments():
     parser.add_argument(
                         "-s",
                         "--sort",
-                        help    =   "The criteria to sort the colors by. Default = 'frequency'\n(NOTE: the order of the arguments matter when used with --number)",
+                        help    = "The criteria to sort the colors by. Default = 'frequency'\n(NOTE: the order of the arguments matter when used with --number)",
                         type    = str,
                         default = 'frequency',
                         choices = ['saturation', 'value', 'brightness', 'chroma'],
                         dest    = "sort_by")
     parser.add_argument(
+                        "-r",
+                        "--reverse",
+                        help = "Reverse the sort order. Default = False",
+                        default = False,
+                        action = 'store_true')
+    parser.add_argument(
                         "-m",
                         "--mod",
-                        help    = "Modify the colors properties before sorting.",
+                        help    = "Modify the colors properties, will be performed last. 'max-val' maximizes the value/brightness of the colors and 'max-sat' maximizes the saturations.",
                         type    = str,
                         choices = ['max-val','max-sat'],
-                        nargs   = '+',
+                        nargs   = '*',
                         dest    = "mod")
     parser.add_argument(
                         "-v",
@@ -240,21 +246,58 @@ def main():
             print(pytext.format_text(text="[-] Invalid image file.", color="red"))
             exit(0)
 
+        # Check number of clusters
+        percent = int(((num_clusters - num_colors) * 100) / num_colors)
+        notify = []
+        per = 20
+
         if num_colors > num_clusters:
-            print('[!] Number of clusters adjusted to match number of desired colors.')
-            num_clusters = num_colors
+            num_clusters = round(num_colors * (1 + (per / 100)))
+            notify.append((
+                f'[!]Number of clusters automatically adjusted to {str(per)}% more than number of desired colors', 'yellow'
+            ))
+        elif percent == 0:
+            notify.append((
+                f'[!] Number of clusters is equal to the number of colors\n    Problems may occur with high numbers', 'red'
+            ))
+        elif percent < per:
+            notify.append((
+                f'[!]Number of clusters is only {percent}% more than number of colors\n    Problems may occur with high numbers', 'red'
+            ))
+
 
         # Print arguments (if verbose flag is True)
         if args.verbose:
-            print(f"Image path: {img_path}")
-            print(f"Output path: {output_path}")
-            print(f"Output format: {output_format}")
-            if output_format == 'hex':
-                print(f"Include hashtag: {include_hashtag}")
-            print(f"Number of clusters: {num_clusters}")
-            print(f"Sort by: {sort_by}")
-            print(f"Number of colors: {num_colors}")
-            print(f"Mod: {mod}")
+
+            # Image path
+            print("{:<10}: {}".format("Img path", img_path))
+            
+            # Output
+            if output_path: 
+                print("{:<10}: {}".format("Output", output_path))
+            
+            # Color format
+            print("{:<10}: {}".format("Format", output_format))
+
+            if output_format == 'hex': 
+                print("{:<10}: {}".format("Include #", include_hashtag))
+
+            # Number of clusters
+            print("{:<10}: {}".format("Clusters", num_clusters))
+
+            # Number of colors
+            print("{:<10}: {}".format("Colors", num_colors))
+            
+            # Sort by
+            print("{:<10}: {}".format("Sort by", sort_by), end = " ")
+
+            if args.reverse:
+                print("[reversed]")
+            else:
+                print()
+
+            # Modifications
+            if mod: print("{:<10}: {}".format("Mods", mod))
 
             # Divider
             div = len(banner_text)*"-"+">"
@@ -269,60 +312,71 @@ def main():
             print(pytext.format_text(text="[-] Invalid image file.", color="red"))
             exit(0)
 
-        
-        # Check if the sort_by argument was passed before the num_colors argument
-        sort_first = (
-            (args.sort_by is not None or '-s' in sys.argv)
-            and (args.num_colors is not None or '-n' in sys.argv)
-            and (
-                ("--sort" in sys.argv and ('--number' in sys.argv) and sys.argv.index("--sort") < sys.argv.index("--number"))
-                or ("-s" in sys.argv and ('-n' in sys.argv) and sys.argv.index('-s') < sys.argv.index('-n'))
-            )
-        ) if args.sort_by is not None or args.num_colors is not None else True
-
         sort_keys = {   'saturation': lambda x: x[1],
                         'brightness': lambda x: x[2],
                         'value'     : lambda x: x[2],
                         'chroma'    : lambda x: x[1]*x[2]}
 
-        if sort_by != 'frequency':
-            if sort_first:
-                if args.verbose: print("[+] Sorting before limiting the number of colors")
-                # Sort the palette and cut the list
-                palette = sorted(palette, key=sort_keys.get(sort_by))
-                user_palette = palette[-num_colors:]
-            else:
-                if args.verbose: print("[+] Sorting after limiting the number of colors")
-                # Cut the list and sort
-                user_palette = palette[-num_colors:]
-                user_palette = sorted(user_palette, key=sort_keys.get(sort_by))
-        else:
-            user_palette = palette[-num_colors:]
- 
+        # Initialize a variable to keep track if the palette has been cutted or not
+        cutted = False
+
+        # Iterate over the command-line arguments
+        for a in sys.argv[1:]:
+            if a in ['--sort', '-s']:
+                print(f'[+] Sorting by {sort_by}..')
+                
+                # Sort the palette using the 'sort_keys'
+                if args.reverse:
+                    palette = sorted(palette, key=sort_keys.get(sort_by), reverse=True)
+                else:
+                    palette = sorted(palette, key=sort_keys.get(sort_by))
+
+            elif a in ['--number', '-n']:
+                print(f'[+] Limiting to {num_colors} colors..')
+                
+                # Cut the palette
+                cutted = True
+                palette = palette[:num_colors]
+
+            elif a in ['--mods', '-m']:
+                # Iterate over the palette and apply the specified modifications
+                for i, (first, second, third) in enumerate(palette):
+                    if 'max-sat' in mod:
+                        palette[i] = (first, 255, third)
+                    if 'max-val' in mod:
+                        palette[i] = (first, second, 255)
+
+        # Cut the palette if havent already
+        if not cutted:
+            palette = palette[:num_colors]
+
         # Loop through the palette, starting at the last color
         output_colors = []
-        for i, hsv_color in enumerate(user_palette, start=1):
-
-            hsv_list = list(hsv_color)
-            if mod:
-                if 'max-sat' in mod:
-                    hsv_list[1] = 255
-                if 'max-val' in mod:
-                    hsv_list[2] = 255
-            hsv_color = tuple(hsv_list)
-
+        columns = []
+        column = []
+        items_per_column = 20
+        for i, hsv_color in enumerate(palette, start=1):
+            
+            # Convert
             rgb_color = hsv2rgb(hsv_color)
             hex_color = rgb2hex(rgb_color)
 
             if output_format == 'rgb':
                 color = tuple(map(round, rgb_color))
+                bg_color = str(color).center(17)
+
             elif output_format == 'hex':
-                if output_format == "hex" and args.include_hashtag:
-                    color = '#' + hex_color
+                color = hex_color
+                if args.include_hashtag:
+                    color = '#' + color
+                    bg_color = str(color).center(9)
                 else:
-                    color = hex_color
+                    bg_color = str(color).center(8)
+
             elif output_format == 'hsv':
                 color = tuple(map(round, hsv_color))
+                bg_color = str(color).center(17)
+
             else:
                 print("[-] Invalid output format")
 
@@ -330,9 +384,30 @@ def main():
 
             # Format the text and background color of the print statement
             text_color = "#ffffff" if hsv_color[2] < 128 else "#000000"
-            pytext_palette = pytext.format_text(text=color, color=text_color, bgcolor='#'+hex_color)
+            pytext_palette = pytext.format_text(text=bg_color, color=text_color, bgcolor='#'+hex_color)
 
-            print(f'[{num_colors-i+1}] {pytext_palette}')
+            # Construct a column
+            num = str(i).zfill(len(str(num_colors)))
+            column.append(f'[{num}] {pytext_palette}')
+            if i % items_per_column == 0 or i == num_colors:
+                columns.append(column)
+                column = []
+        
+        
+        # Check items per column
+        if num_colors < items_per_column:
+            items_per_column = num_colors
+
+        # Print columns
+        #columns = list(reversed(columns))
+        for i in range(items_per_column):
+            for c in columns:
+                c = list(reversed(c))
+                try:
+                    print(c[i], end=' ')
+                except:
+                    pass
+            print()
 
         # Output
         if output_path and os.path.exists(os.path.dirname(output_path)):
@@ -346,13 +421,17 @@ def main():
             with open(output_path, 'w') as f:
                 
                 # Save as ascending list, most common on top
-                for item in output_colors[::-1]:
+                for item in output_colors:
                     f.write(f'{item}\n')
 
             if args.verbose: print(f'[+] Saved to {output_path}')
         
         if args.verbose: t.stop()
+        for item in notify:
+            print(pytext.format_text(text=item[0], color=item[1]))
+            
         exit(0)
+
 
 # Call the main() function to begin the program.
 if __name__ == "__main__":
